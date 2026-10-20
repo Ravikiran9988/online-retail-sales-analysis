@@ -37,6 +37,10 @@ countries = load_csv("country_sales_analysis.csv")
 best_month_df = load_csv("best_sales_month.csv")
 sales_kpis = load_csv("sales_kpis.csv")
 
+products = load_csv("top_selling_products.csv")
+country_shortlist = load_csv("sales_by_country.csv")
+
+
 if monthly is None or kpis_df is None:
     st.error("Required exported result files are missing from the repository's data/ folder.")
     st.stop()
@@ -149,6 +153,36 @@ if countries is not None and not countries.empty:
         "Download country analysis CSV",
         countries.to_csv(index=False).encode("utf-8"),
         "country_sales_analysis.csv",
+        "text/csv",
+    )
+
+
+if products is not None and not products.empty:
+    st.divider()
+    st.header("🏆 Top-Selling Products")
+    products["TOTAL_REVENUE"] = pd.to_numeric(products["TOTAL_REVENUE"], errors="coerce")
+    products["TOTAL_UNITS_SOLD"] = pd.to_numeric(products["TOTAL_UNITS_SOLD"], errors="coerce")
+    products["PRODUCT_LABEL"] = (
+        products["STOCKCODE"].astype(str) + " · " +
+        products["DESCRIPTION"].fillna("Unknown product").astype(str).str.slice(0, 38)
+    )
+    product_chart = alt.Chart(products.sort_values("TOTAL_REVENUE", ascending=False)).mark_bar().encode(
+        x=alt.X("TOTAL_REVENUE:Q", title="Revenue (£)", axis=alt.Axis(format=",.0f")),
+        y=alt.Y("PRODUCT_LABEL:N", sort="-x", title="Product"),
+        tooltip=[
+            alt.Tooltip("STOCKCODE:N", title="Product code"),
+            alt.Tooltip("DESCRIPTION:N", title="Description"),
+            alt.Tooltip("TOTAL_UNITS_SOLD:Q", title="Units sold", format=","),
+            alt.Tooltip("TOTAL_REVENUE:Q", title="Revenue", format=",.2f"),
+        ],
+    ).properties(height=380)
+    st.altair_chart(product_chart, width="stretch")
+    product_display = products.drop(columns=["PRODUCT_LABEL"], errors="ignore")
+    st.dataframe(product_display, width="stretch", hide_index=True)
+    st.download_button(
+        "Download top-selling products CSV",
+        product_display.to_csv(index=False).encode("utf-8"),
+        "top_selling_products.csv",
         "text/csv",
     )
 
