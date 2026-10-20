@@ -74,7 +74,13 @@ online-retail-sales-analysis/
 ├── requirements.txt
 ├── .gitignore
 ├── app/
-│   └── streamlit_app.py
+│   ├── streamlit_app.py
+│   └── public_demo.py
+├── data/
+│   ├── monthly_revenue.csv
+│   ├── customer_segments_summary.csv
+│   ├── country_sales_analysis.csv
+│   └── other aggregated report CSVs
 └── sql/
     ├── 01_data_quality_checks.sql
     ├── 02_clean_sales_data.sql
@@ -118,11 +124,23 @@ Cancelled invoices are excluded from the main sales table; the cancellation anal
 
 Dashboard screenshots can be added to a `screenshots/` folder and embedded here once available.
 
-## Data Source
+## Data Source and CSV Reports
 
-The project is based on the **Online Retail** dataset from the UCI Machine Learning Repository. Review the dataset information and usage terms before redistributing the raw data:
+The project uses the **Online Retail** dataset from the UCI Machine Learning Repository. Visit the dataset page to review the description, download options, and usage terms:
 
-https://archive.ics.uci.edu/dataset/352/online+retail
+[Online Retail Dataset — UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/352/online+retail)
+
+The repository also includes aggregated CSV exports of selected Snowflake query results for the public Streamlit demo:
+
+- [Monthly revenue report](data/monthly_revenue.csv)
+- [Customer segment summary](data/customer_segments_summary.csv)
+- [Country sales analysis](data/country_sales_analysis.csv)
+- [Sales KPIs](data/sales_kpis.csv)
+- [Best sales month](data/best_sales_month.csv)
+- [Final validation results](data/final_validation.csv)
+- [Cancellation and data-quality summary](data/cancellation_summary.csv)
+
+These CSV files contain summarized analysis results, not the original transaction-level dataset. Individual customer-level files are intentionally not published. The public demo uses static exports, so the figures do not automatically refresh when the Snowflake table changes.
 
 ## Security Notes
 
