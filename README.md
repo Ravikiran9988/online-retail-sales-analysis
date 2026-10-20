@@ -31,6 +31,22 @@ The public demo presents exported, aggregated Snowflake results. It is intended 
 
 The Snowflake-hosted app source is available at [app/streamlit_app.py](app/streamlit_app.py). It uses Snowflake's active session and is intended to run inside Streamlit in Snowflake.
 
+## Dashboard Screenshots
+
+The screenshots below show the Snowflake-hosted dashboard using the cleaned Online Retail dataset.
+
+### Dashboard Overview
+![Dashboard overview showing KPIs and monthly revenue](screenshots/dashboard-overview.png)
+
+### Product and Country Performance
+![Top-selling products and country revenue analysis](screenshots/product-country-performance.png)
+
+### Monthly Revenue Details
+![Monthly revenue report and product performance](screenshots/monthly-revenue-details.png)
+
+### Customer Spending Segments
+![Customer spending segment summary](screenshots/customer-segments.png)
+
 ## Key Results
 
 Results from the current cleaned dataset and validation queries:
