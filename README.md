@@ -11,7 +11,7 @@ The dashboard is designed to help answer questions such as:
 - Which products generate the most revenue?
 - Which countries contribute the most sales?
 - How do customers differ by spending level?
-- What patterns can be seen in returns and cancellations?
+- What patterns can be seen in cancellations?
 
 ## Tools and Technologies
 
@@ -32,7 +32,7 @@ The dashboard is designed to help answer questions such as:
 
 ## Key Results
 
-Based on the cleaned dataset and current dashboard:
+Based on the current cleaned dataset and dashboard:
 
 | Metric | Result |
 |---|---:|
@@ -46,85 +46,81 @@ Based on the cleaned dataset and current dashboard:
 | Revenue in highest-revenue month | £1,503,866.78 |
 | United Kingdom revenue | £9,001,744.09 |
 
-*Note: These figures reflect the current cleaned table and dashboard. Results can vary based on cleaning rules and filters.*
+*These results reflect the current Snowflake table and cleaning choices. Re-running the scripts with different source data or cleaning rules may change the figures.*
 
 ## SQL Analysis
 
-The project contains 13 SQL worksheets covering:
+The `sql/` folder contains 13 scripts:
 
-1. Data quality checks
-2. Clean sales data creation
-3. Monthly sales report
-4. Top-selling products
-5. Sales by country
-6. Best sales month
-7. Sales KPIs
-8. Customer analysis
-9. Country sales analysis
-10. Sales trends
-11. Return analysis
-12. Customer segments
-13. Final validation
+1. `01_data_quality_checks.sql` — inspect missing values, invalid records, and duplicates
+2. `02_clean_sales_data.sql` — standardize and create the cleaned table
+3. `03_monthly_sales_report.sql` — monthly revenue and order metrics
+4. `04_top_selling_products.sql` — products ranked by revenue
+5. `05_sales_by_country.sql` — sales metrics by country
+6. `06_best_sales_month.sql` — highest-revenue month
+7. `07_sales_kpis.sql` — overall business KPIs
+8. `08_customer_analysis.sql` — customer-level purchasing metrics
+9. `09_country_sales_analysis.sql` — revenue contribution by country
+10. `10_sales_trends.sql` — month-over-month revenue changes
+11. `11_return_analysis.sql` — cancellation activity in the raw data
+12. `12_customer_segments.sql` — spending-based customer segments
+13. `13_final_validation.sql` — final table and data-quality checks
 
-## Data Cleaning Approach
-
-The cleaned sales table applies these core rules:
-- Exclude records without an invoice date.
-- Exclude cancelled invoices whose invoice number begins with `C`.
-- Keep records with positive quantity and unit price.
-- Calculate sales amount as `QUANTITY * UNITPRICE`.
-
-These choices make the sales analysis more consistent, but they also mean that cancelled transactions are not included in the main sales figures.
-
-## Project Structure
-
-The repository is intended to include files organized in a structure like this:
+## Repository Structure
 
 ```text
 online-retail-sales-analysis/
 ├── README.md
-├── sql/
-│   ├── 01_data_quality_checks.sql
-│   ├── 02_clean_sales_data.sql
-│   ├── 03_monthly_sales_report.sql
-│   ├── 04_top_selling_products.sql
-│   ├── 05_sales_by_country.sql
-│   ├── 06_best_sales_month.sql
-│   ├── 07_sales_kpis.sql
-│   ├── 08_customer_analysis.sql
-│   ├── 09_country_sales_analysis.sql
-│   ├── 10_sales_trends.sql
-│   ├── 11_return_analysis.sql
-│   ├── 12_customer_segments.sql
-│   └── 13_final_validation.sql
+├── requirements.txt
+├── .gitignore
 ├── app/
 │   └── streamlit_app.py
-└── screenshots/
+└── sql/
+    ├── 01_data_quality_checks.sql
+    ├── 02_clean_sales_data.sql
+    ├── 03_monthly_sales_report.sql
+    ├── 04_top_selling_products.sql
+    ├── 05_sales_by_country.sql
+    ├── 06_best_sales_month.sql
+    ├── 07_sales_kpis.sql
+    ├── 08_customer_analysis.sql
+    ├── 09_country_sales_analysis.sql
+    ├── 10_sales_trends.sql
+    ├── 11_return_analysis.sql
+    ├── 12_customer_segments.sql
+    └── 13_final_validation.sql
 ```
 
-*The structure above is a suggested layout. Add the folders and files as they are uploaded to the repository.*
+## Data Cleaning Approach
 
-## Running the Project
+The cleaned table:
+- Parses invoice dates using the source format `DD-MM-YYYY HH24:MI`.
+- Excludes rows without a valid invoice date.
+- Excludes cancelled invoices whose invoice number begins with `C`.
+- Keeps records with positive quantity and unit price.
+- Removes duplicate rows based on the standardized transaction fields.
+- Calculates `SALES_AMOUNT = QUANTITY * UNITPRICE`.
 
-1. Load the source retail dataset into Snowflake.
-2. Run the SQL scripts in order, updating database, schema, and table names if needed.
-3. Confirm that the cleaned table and analysis queries complete successfully.
-4. Open the Streamlit app in Snowflake and ensure the app's active role can read the required tables.
-5. Adjust the dashboard filters to explore the sales results.
+Cancelled invoices are excluded from the main sales table; the cancellation analysis therefore queries the raw table.
 
-The current dashboard uses Snowflake data, so it will not run on another hosting platform without configuring a compatible data source and credentials.
+## Setup and Usage
 
-## Dashboard Screenshots
+1. Load the Online Retail source dataset into `SALES_PROJECT.PUBLIC.RAW_ONLINE_RETAIL`.
+2. Open Snowflake Snowsight and run the SQL scripts in `sql/` as appropriate. Run the data-cleaning script before the reporting scripts.
+3. Confirm that `SALES_PROJECT.PUBLIC.CLEAN_ONLINE_RETAIL` exists and that the validation query returns sensible results.
+4. Create or open a Streamlit app in Snowflake and use `app/streamlit_app.py` as the app source.
+5. Ensure the active Snowflake role has permission to query the required database, schema, and table.
+6. Use the date and country filters to explore results and download the displayed analysis as CSV files.
 
-Screenshots can be added to the `screenshots/` folder and displayed here. For example:
+**Hosting note:** The dashboard code uses `get_active_session()`, which is intended for Streamlit in Snowflake. It will not run unchanged on Streamlit Community Cloud or another standalone host; that requires a separate secure Snowflake connection or a different data source.
 
-```markdown
-![Sales dashboard](screenshots/dashboard.png)
-```
+## Screenshots
+
+Dashboard screenshots can be added to a `screenshots/` folder and embedded here once available.
 
 ## Data Source
 
-The project is based on the **Online Retail** dataset from the UCI Machine Learning Repository. Review the dataset page and usage terms before redistributing the raw data:
+The project is based on the **Online Retail** dataset from the UCI Machine Learning Repository. Review the dataset information and usage terms before redistributing the raw data:
 
 https://archive.ics.uci.edu/dataset/352/online+retail
 
@@ -138,9 +134,9 @@ https://archive.ics.uci.edu/dataset/352/online+retail
 ## Future Improvements
 
 - Add dashboard screenshots and a short demo video.
-- Add reproducible SQL files and setup instructions.
+- Add automated checks for key metrics and cleaning assumptions.
 - Create a publicly accessible demo with a safe, non-secret data connection.
-- Add tests or validation queries for key metrics.
+- Document the Snowflake setup and permissions in more detail.
 
 ## Author
 
@@ -150,4 +146,4 @@ GitHub: https://github.com/Ravikiran9988
 
 ---
 
-If you find this project useful, feel free to explore the SQL analysis and dashboard implementation.
+Thanks for checking out this project!
