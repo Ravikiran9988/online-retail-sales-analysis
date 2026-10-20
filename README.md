@@ -132,6 +132,8 @@ The project uses the **Online Retail** dataset from the UCI Machine Learning Rep
 
 The repository also includes aggregated CSV exports of selected Snowflake query results for the public Streamlit demo:
 
+- [Top-selling products](data/top_selling_products.csv)
+- [Sales by country](data/sales_by_country.csv)
 - [Monthly revenue report](data/monthly_revenue.csv)
 - [Customer segment summary](data/customer_segments_summary.csv)
 - [Country sales analysis](data/country_sales_analysis.csv)
