@@ -1,116 +1,113 @@
-# Public portfolio demo for Online Retail Sales Analysis.
-# This version uses illustrative data so it can run without Snowflake credentials.
-# It is intentionally separate from app/streamlit_app.py, which uses Streamlit in Snowflake.
-
+# Public portfolio dashboard using actual aggregated Snowflake exports.
+# No Snowflake credentials or customer-level records are included.
 import pandas as pd
 import streamlit as st
 import altair as alt
+from pathlib import Path
 
-st.set_page_config(page_title="Online Retail Sales Analysis | Demo", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Online Retail Sales Analysis", page_icon="📊", layout="wide")
 st.title("📊 Online Retail Sales Analysis")
-st.caption("Public portfolio demo • Snowflake SQL + Streamlit")
+st.caption("Public portfolio dashboard • Snowflake SQL + Streamlit")
 
-st.info(
-    "This public demo uses illustrative example data to demonstrate the dashboard layout. "
-    "It is not connected to the live Snowflake table. The full Snowflake-connected app is separate."
-)
+BASE_DIR = Path(__file__).resolve().parents[1]
+DATA_DIR = BASE_DIR / "data"
 
-# Illustrative summary values based on the project's current cleaned-table KPIs.
-# Charts below use small illustrative examples, not the complete transaction-level dataset.
+@st.cache_data
+def load_csv(name):
+    return pd.read_csv(DATA_DIR / name)
+
+monthly = load_csv("monthly_revenue.csv")
+segments = load_csv("customer_segments_summary.csv")
+kpis = load_csv("project_kpis.csv").iloc[0]
+returns = load_csv("cancellation_summary.csv").iloc[0]
+
+monthly["SALES_MONTH"] = pd.to_datetime(monthly["SALES_MONTH"])
+segments["CUSTOMER_SEGMENT"] = segments["CUSTOMER_SEGMENT"].astype(str)
+
 with st.sidebar:
-    st.header("Explore the demo")
-    date_range = st.select_slider(
-        "Example reporting period",
-        options=["All year", "First half", "Second half"],
-        value="All year",
-    )
-    selected_country = st.selectbox(
-        "Example country",
-        ["All countries", "United Kingdom", "Germany", "France", "EIRE"],
-    )
+    st.header("Filters")
+    start_date = st.date_input("Start month", value=monthly["SALES_MONTH"].min().date(),
+                               min_value=monthly["SALES_MONTH"].min().date(),
+                               max_value=monthly["SALES_MONTH"].max().date())
+    end_date = st.date_input("End month", value=monthly["SALES_MONTH"].max().date(),
+                             min_value=monthly["SALES_MONTH"].min().date(),
+                             max_value=monthly["SALES_MONTH"].max().date())
 
-kpis = [
-    ("Total revenue (project result)", "£10,642,110.80"),
-    ("Invoices", "19,960"),
-    ("Unique customers", "4,338"),
-    ("Unique products", "3,921"),
-    ("Units sold", "5,572,416"),
-    ("Clean sales records", "524,874"),
-]
-cols = st.columns(3)
-for i, (label, value) in enumerate(kpis):
-    cols[i % 3].metric(label, value)
+if start_date > end_date:
+    st.error("Start month must be before or equal to end month.")
+    st.stop()
 
-st.divider()
+filtered_monthly = monthly[
+    (monthly["SALES_MONTH"].dt.date >= start_date) &
+    (monthly["SALES_MONTH"].dt.date <= end_date)
+].copy()
 
-monthly = pd.DataFrame({
-    "Month": pd.to_datetime([
-        "2011-01-01", "2011-02-01", "2011-03-01", "2011-04-01",
-        "2011-05-01", "2011-06-01", "2011-07-01", "2011-08-01",
-        "2011-09-01", "2011-10-01", "2011-11-01", "2011-12-01",
-    ]),
-    "Revenue (£)": [560000, 500000, 680000, 490000, 720000, 700000,
-                    680000, 710000, 980000, 1050000, 1503866.78, 800000],
-})
-products = pd.DataFrame({
-    "Product": ["Product example A", "Product example B", "Product example C",
-                "Product example D", "Product example E"],
-    "Revenue (£)": [82000, 67000, 54000, 46000, 39000],
-})
-countries = pd.DataFrame({
-    "Country": ["United Kingdom", "Germany", "France", "EIRE", "Spain"],
-    "Revenue (£)": [9001744.09, 230000, 180000, 150000, 90000],
-})
+# Totals at project level are the actual final validation values. When a date filter
+# narrows the view, the monthly chart and table respond to that filter.
+c1, c2, c3 = st.columns(3)
+c1.metric("Total Revenue (full dataset)", f"£{float(kpis['TOTAL_REVENUE']):,.2f}")
+c2.metric("Invoices (full dataset)", f"{int(kpis['TOTAL_INVOICES']):,}")
+c3.metric("Unique Customers", f"{int(kpis['UNIQUE_CUSTOMERS']):,}")
+c4, c5, c6 = st.columns(3)
+c4.metric("Unique Products", f"{int(kpis['UNIQUE_PRODUCTS']):,}")
+c5.metric("Units Sold", f"{int(kpis['TOTAL_UNITS_SOLD']):,}")
+c6.metric("Clean Sales Records", f"{int(kpis['TOTAL_ROWS']):,}")
 
-if date_range == "First half":
-    monthly = monthly[monthly["Month"].dt.month <= 6]
-elif date_range == "Second half":
-    monthly = monthly[monthly["Month"].dt.month >= 7]
-
-if selected_country != "All countries":
-    countries = countries[countries["Country"] == selected_country]
+st.info("All KPI values and report figures shown here are based on exported Snowflake results. The date filter affects the monthly report chart and table; overall KPI cards represent the full cleaned dataset.")
 
 left, right = st.columns(2)
 with left:
-    st.subheader("Monthly revenue trend")
-    st.caption("Illustrative monthly series; peak-month value shown from the project result.")
-    line = alt.Chart(monthly).mark_line(point=True).encode(
-        x=alt.X("Month:T", title="Month"),
-        y=alt.Y("Revenue (£):Q", title="Revenue (£)", axis=alt.Axis(format=",.0f")),
-        tooltip=[alt.Tooltip("Month:T", title="Month"),
-                 alt.Tooltip("Revenue (£):Q", format=",.2f")],
-    ).properties(height=320)
-    st.altair_chart(line, width="stretch")
+    st.subheader("Monthly Revenue Trend")
+    chart = alt.Chart(filtered_monthly).mark_line(point=True).encode(
+        x=alt.X("SALES_MONTH:T", title="Month"),
+        y=alt.Y("MONTHLY_REVENUE:Q", title="Revenue (£)", axis=alt.Axis(format=",.0f")),
+        tooltip=[
+            alt.Tooltip("SALES_MONTH:T", title="Month"),
+            alt.Tooltip("MONTHLY_REVENUE:Q", title="Revenue", format=",.2f"),
+            alt.Tooltip("TOTAL_INVOICES:Q", title="Invoices", format=","),
+            alt.Tooltip("TOTAL_UNITS_SOLD:Q", title="Units sold", format=","),
+        ],
+    ).properties(height=330)
+    st.altair_chart(chart, width="stretch")
 
 with right:
-    st.subheader("Top products")
-    st.caption("Example products for demonstrating the chart.")
-    bars = alt.Chart(products).mark_bar().encode(
-        x=alt.X("Revenue (£):Q", title="Revenue (£)"),
-        y=alt.Y("Product:N", sort="-x", title="Product"),
-        tooltip=["Product", alt.Tooltip("Revenue (£):Q", format=",.2f")],
-    ).properties(height=320)
-    st.altair_chart(bars, width="stretch")
+    st.subheader("Customer Spending Segments")
+    seg_chart = alt.Chart(segments).mark_bar().encode(
+        x=alt.X("CUSTOMER_COUNT:Q", title="Customers"),
+        y=alt.Y("CUSTOMER_SEGMENT:N", sort="-x", title="Segment"),
+        color=alt.Color("CUSTOMER_SEGMENT:N", legend=None),
+        tooltip=[
+            alt.Tooltip("CUSTOMER_SEGMENT:N", title="Segment"),
+            alt.Tooltip("CUSTOMER_COUNT:Q", title="Customers", format=","),
+            alt.Tooltip("TOTAL_REVENUE:Q", title="Segment revenue", format=",.2f"),
+        ],
+    ).properties(height=250)
+    st.altair_chart(seg_chart, width="stretch")
+    st.dataframe(segments, width="stretch", hide_index=True)
 
-st.subheader("Country performance")
-st.caption("United Kingdom revenue reflects the project result; other country values are illustrative examples.")
-st.dataframe(countries, width="stretch", hide_index=True)
+st.subheader("Monthly Sales Report")
+display_monthly = filtered_monthly.copy()
+display_monthly["SALES_MONTH"] = display_monthly["SALES_MONTH"].dt.strftime("%Y-%m")
+display_monthly["MONTHLY_REVENUE"] = display_monthly["MONTHLY_REVENUE"].map(lambda x: f"£{x:,.2f}")
+st.dataframe(display_monthly, width="stretch", hide_index=True)
 
-st.subheader("Customer spending segments")
-segments = pd.DataFrame({
-    "Customer segment": ["High value", "Medium value", "Low value"],
-    "Example customers": [340, 1250, 2748],
-})
-seg_chart = alt.Chart(segments).mark_bar().encode(
-    x=alt.X("Example customers:Q", title="Example customer count"),
-    y=alt.Y("Customer segment:N", sort="-x", title="Segment"),
-    tooltip=["Customer segment", "Example customers"],
-).properties(height=220)
-st.altair_chart(seg_chart, width="stretch")
-st.caption("Customer-segment counts are illustrative and do not represent calculated final segment totals.")
+st.subheader("Cancellation and Data-Quality Summary")
+r1, r2, r3, r4 = st.columns(4)
+r1.metric("Cancelled rows", f"{int(returns['CANCELLED_ROWS']):,}")
+r2.metric("Negative quantity rows", f"{int(returns['NEGATIVE_QUANTITY_ROWS']):,}")
+r3.metric("Non-positive price rows", f"{int(returns['NONPOSITIVE_PRICE_ROWS']):,}")
+r4.metric("Negative-quantity value", f"£{float(returns['NEGATIVE_QUANTITY_VALUE']):,.2f}")
 
-csv = monthly.to_csv(index=False).encode("utf-8")
-st.download_button("Download example monthly data (CSV)", csv, "example_monthly_revenue.csv", "text/csv")
-
-st.markdown("---")
-st.caption("Project repository: https://github.com/Ravikiran9988/online-retail-sales-analysis")
+st.download_button(
+    "Download monthly report CSV",
+    filtered_monthly.to_csv(index=False).encode("utf-8"),
+    "monthly_revenue.csv",
+    "text/csv",
+)
+st.download_button(
+    "Download customer segment summary CSV",
+    segments.to_csv(index=False).encode("utf-8"),
+    "customer_segments_summary.csv",
+    "text/csv",
+)
+st.caption("Data is a static export of aggregated Snowflake query results. It does not refresh automatically from Snowflake.")
