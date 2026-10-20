@@ -134,6 +134,7 @@ The repository also includes aggregated CSV exports of selected Snowflake query 
 
 - [Top-selling products](data/top_selling_products.csv)
 - [Sales by country](data/sales_by_country.csv)
+- [Daily sales trends](data/sales_trends.csv)
 - [Monthly revenue report](data/monthly_revenue.csv)
 - [Customer segment summary](data/customer_segments_summary.csv)
 - [Country sales analysis](data/country_sales_analysis.csv)
